@@ -56,6 +56,7 @@ func readFile(filePath string) ([]float64, error) {
 	fileReader, err := os.Open(filePath)
 	var values = make([]float64, 0, 8)
 	if err != nil {
+		_ = fileReader.Close()
 		return []float64{}, err
 	}
 	scanner := bufio.NewScanner(fileReader)
@@ -69,16 +70,21 @@ func readFile(filePath string) ([]float64, error) {
 		values = append(values, f)
 	}
 	if len(values) == 0 {
+		_ = fileReader.Close()
 		return []float64{}, errors.New(fmt.Sprint("unable to parse any viable values from ", filePath))
 	}
+	_ = fileReader.Close()
 	return values, nil
 }
 
 func ToJson(vatTables []VatTable, targetPath string) error {
 	baseWriter, err := os.OpenFile(targetPath, os.O_RDWR|os.O_CREATE, 0644)
 	if err != nil {
+		_ = baseWriter.Close()
 		panic(fmt.Sprintf("Unable to open file %s, got error:\n%v\n", targetPath, err))
 	}
 	encoder := json.NewEncoder(baseWriter)
-	return encoder.Encode(vatTables)
+	err = encoder.Encode(vatTables)
+	_ = baseWriter.Close()
+	return err
 }
